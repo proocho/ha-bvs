@@ -1,0 +1,28 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sign in to the BVS portal",
+        "description": "Enter your credentials for the BVS customer portal at zakaznik.bvsas.sk.",
+        "data": {
+          "username": "Login email",
+          "password": "Password"
+        }
+      },
+      "contract": {
+        "title": "Point of delivery",
+        "data": {
+          "contract_id": "Point of delivery"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password.",
+      "cannot_connect": "The BVS portal did not respond. Try again later."
+    },
+    "abort": {
+      "already_configured": "This point of delivery is already configured.",
+      "all_configured": "This portal account exposes {count} point(s) of delivery ({found}) and all of them are already in Home Assistant. If another one is missing, it is not linked to this login — add it in the zakaznik.bvsas.sk portal (or it belongs to a different account)."
+    }
+  }
+}

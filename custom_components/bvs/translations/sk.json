@@ -1,0 +1,28 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Prihlásenie do portálu BVS",
+        "description": "Zadaj prihlasovacie údaje zo zákazníckeho portálu zakaznik.bvsas.sk.",
+        "data": {
+          "username": "Prihlasovací email",
+          "password": "Heslo"
+        }
+      },
+      "contract": {
+        "title": "Odberné miesto",
+        "data": {
+          "contract_id": "Odberné miesto"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Nesprávny email alebo heslo.",
+      "cannot_connect": "Portál BVS neodpovedal. Skús to znova neskôr."
+    },
+    "abort": {
+      "already_configured": "Toto odberné miesto je už pridané.",
+      "all_configured": "Na tomto portálovom účte je {count} odberné miesto/miesta ({found}) a všetky sú už v Home Assistante. Ak ti tu chýba ďalšie odberné miesto, nie je naviazané na tento login — pridaj si ho v portáli zakaznik.bvsas.sk (alebo je vedené pod iným prihlásením)."
+    }
+  }
+}
