@@ -3,10 +3,11 @@
   "name": "BVS - spotreba vody",
   "codeowners": ["@proocho"],
   "config_flow": true,
+  "dependencies": ["recorder"],
   "documentation": "https://github.com/proocho/ha-bvs",
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/proocho/ha-bvs/issues",
   "requirements": [],
-  "version": "1.4.0"
+  "version": "1.4.1"
 }
