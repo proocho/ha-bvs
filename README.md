@@ -109,15 +109,6 @@ Ak sa niečo správa čudne: **Nastavenia → Zariadenia a služby → BVS → t
 discovery reťaz (Accounts → ContractAccounts → Contracts) s redigovanými
 osobnými údajmi — z neho je hneď vidieť, čo portál pre daný login vracia.
 
-## Licencia
-
-[MIT](LICENSE)
-
-[hacs-badge]: https://img.shields.io/badge/HACS-Custom-41BDF5.svg
-[hacs-url]: https://github.com/hacs/integration
-[release-badge]: https://img.shields.io/github/v/release/proocho/ha-bvs
-[release-url]: https://github.com/proocho/ha-bvs/releases
-
 ## Ikona integrácie
 
 Ikona je priamo v integrácii (`custom_components/bvs/brand/`) a Home Assistant
@@ -129,3 +120,12 @@ V paneli HACS sa zatiaľ ukazuje placeholder „icon not available" — HACS
 frontend ešte ikony ťahá z CDN namiesto lokálneho proxy
 ([hacs/integration#5223](https://github.com/hacs/integration/issues/5223)).
 Na stránke *Nastavenia → Zariadenia a služby* sa ikona zobrazuje správne.
+
+## Licencia
+
+[MIT](LICENSE)
+
+[hacs-badge]: https://img.shields.io/badge/HACS-Custom-41BDF5.svg
+[hacs-url]: https://github.com/hacs/integration
+[release-badge]: https://img.shields.io/github/v/release/proocho/ha-bvs
+[release-url]: https://github.com/proocho/ha-bvs/releases
