@@ -117,3 +117,15 @@ osobnými údajmi — z neho je hneď vidieť, čo portál pre daný login vraci
 [hacs-url]: https://github.com/hacs/integration
 [release-badge]: https://img.shields.io/github/v/release/proocho/ha-bvs
 [release-url]: https://github.com/proocho/ha-bvs/releases
+
+## Ikona integrácie
+
+Ikona je priamo v integrácii (`custom_components/bvs/brand/`) a Home Assistant
+ju od verzie 2026.3.0 servíruje sám cez `/api/brands/integration/bvs/icon.png`
+([brands proxy API](https://developers.home-assistant.io/blog/2026/02/24/brands-proxy-api)).
+Do repozitára `home-assistant/brands` sa ikony custom integrácií už neposielajú.
+
+V paneli HACS sa zatiaľ ukazuje placeholder „icon not available" — HACS
+frontend ešte ikony ťahá z CDN namiesto lokálneho proxy
+([hacs/integration#5223](https://github.com/hacs/integration/issues/5223)).
+Na stránke *Nastavenia → Zariadenia a služby* sa ikona zobrazuje správne.
