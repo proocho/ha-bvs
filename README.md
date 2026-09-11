@@ -5,6 +5,8 @@
 [![hacs][hacs-badge]][hacs-url]
 [![release][release-badge]][release-url]
 
+[![Otvor v HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=proocho&repository=ha-bvs&category=integration)
+
 Neoficiálna integrácia spotreby vody zo zákazníckeho portálu
 [BVS](https://www.bvsas.sk) (Bratislavská vodárenská spoločnosť) do Home
 Assistanta, vrátane importu dlhodobej histórie spotreby.
