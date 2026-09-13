@@ -164,20 +164,32 @@ class BvsApi:
             f"{ODATA}{path}",
             headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
         ) as resp:
-            resp.raise_for_status()
+            status = resp.status
             body = await resp.text()
 
         # WAF nevracia 4xx -- odpovie 200 s HTML stránkou.
         if "Request Rejected" in body:
             raise BvsWafError(f"WAF zahodil {path}")
 
-        if "LOGIN_FORM" in body:
+        # Vypršaná session sa hlási dvojako: buď 200 s prihlasovacím
+        # formulárom, alebo rovno HTTP 401. Kým sa chytal len ten formulár,
+        # 401 vyletelo ako aiohttp chyba ešte pred touto vetvou, _logged_in
+        # zostalo True a integrácia padala pri každom ďalšom odpočte -- SAP
+        # session totiž nevydrží 12 h medzi dvomi pollmi. Cookie jar sa musí
+        # vyprázdniť, inak sa prihlásenie pokúša obnoviť mŕtvu session.
+        if status in (401, 403) or "LOGIN_FORM" in body:
             self._logged_in = False
+            self._session.cookie_jar.clear()
             if _retry:
-                _LOGGER.debug("Session vypršala, prihlasujem sa znova")
+                _LOGGER.debug(
+                    "Session vypršala (HTTP %s), prihlasujem sa znova", status
+                )
                 await self.login()
                 return await self._get(path, _retry=False)
             raise BvsAuthError("session vypršala a obnovenie zlyhalo")
+
+        if status >= 400:
+            raise BvsError(f"portál vrátil HTTP {status} pre {path}")
 
         try:
             return json.loads(body)["d"]
