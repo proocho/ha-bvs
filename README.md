@@ -17,6 +17,10 @@ v prehliadači. Len GET požiadavky, žiadne zápisy.
 
 ## Inštalácia
 
+Vyžaduje **Home Assistant 2026.9.0** alebo novší — od verzie 1.5.0 sa vodomery
+vešajú pod odberné miesto cez `via_device_id`, ktorý staršie jadro nepozná.
+Na staršom HA zostaň na verzii 1.4.3.
+
 ### HACS (odporúčané)
 
 1. HACS → tri bodky vpravo hore → **Custom repositories**

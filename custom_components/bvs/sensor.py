@@ -13,6 +13,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -210,6 +211,22 @@ METER_SENSORS: tuple[BvsMeterSensorDescription, ...] = (
 )
 
 
+def _om_device_info(coordinator: BvsCoordinator) -> DeviceInfo:
+    """Zariadenie odberného miesta.
+
+    Definované na jednom mieste, lebo ho potrebuje aj BvsSensor, aj explicitné
+    vytvorenie v registry nižšie -- keby sa tie dve rozišli, vznikli by dve
+    zariadenia namiesto jedného.
+    """
+    return DeviceInfo(
+        identifiers={(DOMAIN, coordinator.contract_id)},
+        name=f"BVS {coordinator.installation_name}",
+        manufacturer="Bratislavská vodárenská spoločnosť",
+        model="Odberné miesto",
+        configuration_url="https://zakaznik.bvsas.sk/portal",
+    )
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: BvsConfigEntry,
@@ -217,13 +234,22 @@ async def async_setup_entry(
 ) -> None:
     """Vytvorí sensory pre odberné miesto a pre každý vodomer."""
     coordinator = entry.runtime_data
+
+    # via_device_id chce id záznamu z registry, nie identifikátor, takže
+    # odberné miesto musí existovať skôr, než sa naň vodomery zavesia.
+    # Doteraz vznikalo mimochodom z DeviceInfo prvého sensora, čo pri
+    # via_device_id nestačí -- v tej chvíli ešte nemá id.
+    om = dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id, **_om_device_info(coordinator)
+    )
+
     entities: list[SensorEntity] = [
         BvsSensor(coordinator, description) for description in SENSORS
     ]
     # Na jednom OM býva viac vodomerov (napr. hlavný + záhradný).
     for meter in coordinator.data.meters:
         entities.extend(
-            BvsMeterSensor(coordinator, meter.device_id, description)
+            BvsMeterSensor(coordinator, meter.device_id, description, om.id)
             for description in METER_SENSORS
         )
     async_add_entities(entities)
@@ -241,13 +267,7 @@ class BvsSensor(CoordinatorEntity[BvsCoordinator], SensorEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{coordinator.contract_id}_{description.key}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, coordinator.contract_id)},
-            name=f"BVS {coordinator.installation_name}",
-            manufacturer="Bratislavská vodárenská spoločnosť",
-            model="Odberné miesto",
-            configuration_url="https://zakaznik.bvsas.sk/portal",
-        )
+        self._attr_device_info = _om_device_info(coordinator)
 
     @property
     def native_value(self):
@@ -279,6 +299,7 @@ class BvsMeterSensor(CoordinatorEntity[BvsCoordinator], SensorEntity):
         coordinator: BvsCoordinator,
         device_id: str,
         description: BvsMeterSensorDescription,
+        om_device_id: str,
     ) -> None:
         super().__init__(coordinator)
         self.entity_description = description
@@ -289,7 +310,7 @@ class BvsMeterSensor(CoordinatorEntity[BvsCoordinator], SensorEntity):
         name = meter.name if meter else device_id
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{coordinator.contract_id}_{device_id}")},
-            via_device=(DOMAIN, coordinator.contract_id),
+            via_device_id=om_device_id,
             name=f"BVS {coordinator.installation_name} {name}",
             manufacturer="Bratislavská vodárenská spoločnosť",
             model="Vodomer",
