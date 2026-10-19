@@ -14,6 +14,13 @@
         "data": {
           "contract_id": "Odberné miesto"
         }
+      },
+      "reauth_confirm": {
+        "title": "Znovu sa prihlásiť",
+        "description": "Portál BVS odmietol prihlásenie pre {username}. Zadaj heslo znova.",
+        "data": {
+          "password": "Heslo"
+        }
       }
     },
     "error": {
@@ -22,7 +29,8 @@
     },
     "abort": {
       "already_configured": "Toto odberné miesto je už pridané.",
-      "all_configured": "Na tomto portálovom účte je {count} odberné miesto/miesta ({found}) a všetky sú už v Home Assistante. Ak ti tu chýba ďalšie odberné miesto, nie je naviazané na tento login — pridaj si ho v portáli zakaznik.bvsas.sk (alebo je vedené pod iným prihlásením)."
+      "all_configured": "Na tomto portálovom účte je {count} odberné miesto/miesta ({found}) a všetky sú už v Home Assistante. Ak ti tu chýba ďalšie odberné miesto, nie je naviazané na tento login — pridaj si ho v portáli zakaznik.bvsas.sk (alebo je vedené pod iným prihlásením).",
+      "reauth_successful": "Prihlásenie bolo obnovené."
     }
   }
 }

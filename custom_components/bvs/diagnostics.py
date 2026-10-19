@@ -7,9 +7,10 @@ miesto v config flow neponúkne. Osobné údaje sa redigujú.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
-from homeassistant.components.diagnostics import async_redact_data
+from homeassistant.components.diagnostics import REDACTED, async_redact_data
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 
@@ -17,14 +18,22 @@ from urllib.parse import quote
 
 from . import BvsConfigEntry
 from .api import BvsError
+from .const import CONF_ACCOUNT_ID, CONF_CONTRACT_ID, CONF_INSTALLATION_ID
 
 TO_REDACT = {
     CONF_PASSWORD,
     CONF_USERNAME,
+    CONF_ACCOUNT_ID,
+    CONF_CONTRACT_ID,
+    CONF_INSTALLATION_ID,
     "AccountID",
     "BusinessAgreementID",
     "City",
     "CityName",
+    "ContractAccountID",
+    "ContractAccountName",
+    "ContractID",
+    "Description",
     "Email",
     "FirstName",
     "FullName",
@@ -36,7 +45,8 @@ TO_REDACT = {
     "PostalCode",
     "Street",
     "ZzRegisteredMail",
-    "account_id",
+    "contract_account_id",
+    "name",
 }
 
 
@@ -97,7 +107,55 @@ async def async_get_config_entry_diagnostics(
         diag["error"] = f"{type(err).__name__}: {err}"
 
     diag["probes"] = await _async_probe(api, accounts=account_ids, diag=diag)
-    return diag
+    # Identifikátory zmluvy sa objavujú aj mimo redigovaných kľúčov -- v
+    # statistic_id, v chybových hláškach s cestou dotazu a v hodnotách polí,
+    # ktorých mená nepoznáme. Preto ešte jeden prechod podľa hodnôt.
+    return _scrub(async_redact_data(diag, TO_REDACT), _identifiers(entry, diag))
+
+
+def _identifiers(entry: BvsConfigEntry, diag: dict[str, Any]) -> set[str]:
+    """Konkrétne hodnoty, ktoré identifikujú zákazníka alebo odberné miesto."""
+    found = {
+        str(entry.data.get(key) or "")
+        for key in (CONF_USERNAME, CONF_ACCOUNT_ID, CONF_CONTRACT_ID, CONF_INSTALLATION_ID)
+    }
+    found.add(str(diag.get("contract_id") or ""))
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key in TO_REDACT and isinstance(value, (str, int)):
+                    found.add(str(value))
+                else:
+                    walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(diag)
+    # Krátke hodnoty (prázdne, "1", "SK") by prepisovali aj nesúvisiaci text.
+    return {value for value in found if len(value) >= 4}
+
+
+def _scrub(node: Any, identifiers: set[str]) -> Any:
+    """Nahradí výskyty identifikátorov v reťazcoch aj kľúčoch."""
+    if not identifiers:
+        return node
+    pattern = re.compile(
+        "|".join(re.escape(v) for v in sorted(identifiers, key=len, reverse=True)),
+        re.IGNORECASE,
+    )
+
+    def scrub(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {scrub(k): scrub(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [scrub(v) for v in value]
+        if isinstance(value, str):
+            return pattern.sub(REDACTED, value)
+        return value
+
+    return scrub(node)
 
 
 async def _async_probe(api, accounts: list, diag: dict) -> dict[str, Any]:
@@ -125,9 +183,9 @@ async def _async_probe(api, accounts: list, diag: dict) -> dict[str, Any]:
         )
     if contract_id:
         paths["contract_detail"] = f"/Contracts('{contract_id}')?$format=json"
-    for ca_id in ca_ids:
+    for index, ca_id in enumerate(ca_ids):
         if account_id:
-            paths[f"contract_account_{ca_id}"] = (
+            paths[f"contract_account_{index}"] = (
                 f"/Accounts('{account_id}')/ContractAccounts('{ca_id}')"
                 "?$format=json&$expand=Contracts"
             )

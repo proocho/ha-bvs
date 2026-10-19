@@ -14,6 +14,13 @@
         "data": {
           "contract_id": "Point of delivery"
         }
+      },
+      "reauth_confirm": {
+        "title": "Sign in again",
+        "description": "The BVS portal rejected the login for {username}. Enter the password again.",
+        "data": {
+          "password": "Password"
+        }
       }
     },
     "error": {
@@ -22,7 +29,8 @@
     },
     "abort": {
       "already_configured": "This point of delivery is already configured.",
-      "all_configured": "This portal account exposes {count} point(s) of delivery ({found}) and all of them are already in Home Assistant. If another one is missing, it is not linked to this login — add it in the zakaznik.bvsas.sk portal (or it belongs to a different account)."
+      "all_configured": "This portal account exposes {count} point(s) of delivery ({found}) and all of them are already in Home Assistant. If another one is missing, it is not linked to this login — add it in the zakaznik.bvsas.sk portal (or it belongs to a different account).",
+      "reauth_successful": "Login restored."
     }
   }
 }
