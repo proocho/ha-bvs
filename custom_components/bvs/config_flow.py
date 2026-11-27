@@ -10,16 +10,24 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.helpers.selector import (
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
 from .api import BvsApi, BvsAuthError, BvsError
 from .const import CONF_ACCOUNT_ID, CONF_CONTRACT_ID, CONF_INSTALLATION_ID, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+# Heslo sa pri písaní nesmie zobrazovať ako čistý text.
+PASSWORD_SELECTOR = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
+
 STEP_USER_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_USERNAME): str,
-        vol.Required(CONF_PASSWORD): str,
+        vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR,
     }
 )
 
@@ -153,7 +161,7 @@ class BvsConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
+            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR}),
             description_placeholders={"username": entry.data[CONF_USERNAME]},
             errors=errors,
         )
