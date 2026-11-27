@@ -50,6 +50,22 @@ class BvsWafError(BvsError):
     """WAF zahodil request -- cesta nie je na whiteliste."""
 
 
+class BvsConnectionError(BvsError):
+    """Portál je nedostupný: sieťová chyba, timeout alebo HTTP 5xx."""
+
+
+# Chyby, ktoré aiohttp hádže pri nedostupnom portáli. Volajúci (config flow,
+# coordinator, diagnostika) chytajú len BvsError, takže sa musia zabaliť.
+_NETWORK_ERRORS = (aiohttp.ClientError, TimeoutError)
+
+
+def _connection_error(exc: BaseException, what: str) -> BvsConnectionError:
+    """Zabalí sieťovú chybu bez URL -- tá nesie identifikátory zmluvy."""
+    if isinstance(exc, aiohttp.ClientResponseError):
+        return BvsConnectionError(f"portál vrátil HTTP {exc.status} ({what})")
+    return BvsConnectionError(f"portál je nedostupný ({what}: {type(exc).__name__})")
+
+
 def parse_sap_date(value: Any) -> datetime | None:
     """SAP OData v2 posiela dátumy ako /Date(1728493620000)/ (ms od epochy, UTC)."""
     if not isinstance(value, str):
@@ -92,11 +108,14 @@ class BvsApi:
     # ------------------------------------------------------------ prihlásenie
 
     async def _fetch_login_xsrf(self) -> str:
-        async with self._session.get(
-            PORTAL, headers={"User-Agent": USER_AGENT}
-        ) as resp:
-            resp.raise_for_status()
-            body = await resp.text()
+        try:
+            async with self._session.get(
+                PORTAL, headers={"User-Agent": USER_AGENT}
+            ) as resp:
+                resp.raise_for_status()
+                body = await resp.text()
+        except _NETWORK_ERRORS as exc:
+            raise _connection_error(exc, "prihlasovacia stránka") from exc
         if "Request Rejected" in body:
             raise BvsWafError("WAF zahodil GET /portal")
         m = _XSRF_RE.search(body)
@@ -122,18 +141,21 @@ class BvsApi:
             "sap-alias": self._username,
             "sap-password": self._password,
         }
-        async with self._session.post(
-            PORTAL,
-            data=data,
-            headers={
-                "User-Agent": USER_AGENT,
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Referer": PORTAL,
-                "Origin": BASE,
-            },
-        ) as resp:
-            resp.raise_for_status()
-            body = await resp.text()
+        try:
+            async with self._session.post(
+                PORTAL,
+                data=data,
+                headers={
+                    "User-Agent": USER_AGENT,
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Referer": PORTAL,
+                    "Origin": BASE,
+                },
+            ) as resp:
+                resp.raise_for_status()
+                body = await resp.text()
+        except _NETWORK_ERRORS as exc:
+            raise _connection_error(exc, "prihlásenie") from exc
 
         if "LOGIN_FORM" in body:
             message = ""
@@ -160,12 +182,15 @@ class BvsApi:
         if not self._logged_in:
             await self.login()
 
-        async with self._session.get(
-            f"{ODATA}{path}",
-            headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
-        ) as resp:
-            status = resp.status
-            body = await resp.text()
+        try:
+            async with self._session.get(
+                f"{ODATA}{path}",
+                headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
+            ) as resp:
+                status = resp.status
+                body = await resp.text()
+        except _NETWORK_ERRORS as exc:
+            raise _connection_error(exc, "OData dotaz") from exc
 
         # WAF nevracia 4xx -- odpovie 200 s HTML stránkou.
         if "Request Rejected" in body:
@@ -188,6 +213,8 @@ class BvsApi:
                 return await self._get(path, _retry=False)
             raise BvsAuthError("session vypršala a obnovenie zlyhalo")
 
+        if status >= 500:
+            raise BvsConnectionError(f"portál vrátil HTTP {status} pre {path}")
         if status >= 400:
             raise BvsError(f"portál vrátil HTTP {status} pre {path}")
 
